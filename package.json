@@ -12,6 +12,41 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "path-viewer",
+          "title": "Path Viewer",
+          "icon": "media/path.svg"
+        }
+      ]
+    },
+    "views": {
+      "path-viewer": [
+        {
+          "id": "all-paths",
+          "name": "All Paths",
+          "icon": "media/path.svg",
+          "contextualTitle": "Path Viewer"
+        },
+        {
+          "id": "path-details",
+          "name": "Path Details",
+          "icon": "media/path.svg",
+          "contextualTitle": "Path Viewer"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "all-paths",
+        "contents": "No output.json chosen yet"
+      },
+      {
+        "view": "path-details",
+        "contents": "No path chosen yet"
+      }
+    ],
     "commands": [
       {
         "command": "thebesttv-path-viewer.helloWorld",
