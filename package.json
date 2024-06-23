@@ -51,6 +51,44 @@
       {
         "command": "thebesttv-path-viewer.openOutputJson",
         "title": "Open as output.json"
+      },
+      {
+        "command": "thebesttv-path-viewer.allPathsPreviousPath",
+        "title": "Show previous path in all paths"
+      },
+      {
+        "command": "thebesttv-path-viewer.allPathsNextPath",
+        "title": "Show next path in all paths"
+      },
+      {
+        "command": "thebesttv-path-viewer.pathDetailsPreviousStmt",
+        "title": "Show previous stmt in path details"
+      },
+      {
+        "command": "thebesttv-path-viewer.pathDetailsNextStmt",
+        "title": "Show next stmt in path details"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "thebesttv-path-viewer.allPathsPreviousPath",
+        "key": "left",
+        "when": "true"
+      },
+      {
+        "command": "thebesttv-path-viewer.allPathsNextPath",
+        "key": "right",
+        "when": "true"
+      },
+      {
+        "command": "thebesttv-path-viewer.pathDetailsPreviousStmt",
+        "key": "up",
+        "when": "true"
+      },
+      {
+        "command": "thebesttv-path-viewer.pathDetailsNextStmt",
+        "key": "down",
+        "when": "true"
       }
     ]
   },

@@ -4,6 +4,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
+const outputChannel = vscode.window.createOutputChannel('Path Viewer Logs');
+
 interface PathItem extends vscode.TreeItem {
     type: string;
     locations: LocationItem[];
@@ -19,59 +21,90 @@ interface LocationItem extends vscode.TreeItem {
     endColumn: number;
 }
 
-class PathProvider implements vscode.TreeDataProvider<PathItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<PathItem | undefined> = new vscode.EventEmitter<PathItem | undefined>();
-    readonly onDidChangeTreeData: vscode.Event<PathItem | undefined> = this._onDidChangeTreeData.event;
+class HasIndexProvider<T extends vscode.TreeItem> implements vscode.TreeDataProvider<T> {
+    private _onDidChangeTreeData: vscode.EventEmitter<T | undefined> = new vscode.EventEmitter<T | undefined>();
+    readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;
 
-    private paths: PathItem[] = [];
+    protected data: T[] = [];
 
     refresh(): void {
         this._onDidChangeTreeData.fire(undefined);
     }
 
-    loadPaths(paths: PathItem[]) {
-        this.paths = paths;
-        this.refresh();
-    }
-
-    getTreeItem(element: PathItem): vscode.TreeItem {
+    getTreeItem(element: T): vscode.TreeItem {
         return element;
     }
 
-    getChildren(element?: PathItem): PathItem[] {
+    getChildren(element?: T): T[] {
         if (element) {
             return [];
         } else {
-            return this.paths;
+            return this.data;
         }
+    }
+
+    getParent(element: T): vscode.ProviderResult<T> {
+        return null;
+    }
+
+    currentIndex: number = 0; // 当前选中的索引
+
+    resetIndex() {
+        this.currentIndex = 0;
+        this.updateView();
+    }
+
+    // 选择上一个元素
+    selectPreviousItem() {
+        this.currentIndex = Math.max(0, this.currentIndex - 1);
+        this.updateView();
+    }
+
+    // 选择下一个元素
+    selectNextItem() {
+        this.currentIndex = Math.min(this.data.length - 1, this.currentIndex + 1);
+        this.updateView();
+    }
+
+    private view?: vscode.TreeView<T>;
+
+    setTreeView(view: vscode.TreeView<T>) {
+        this.view = view;
+    }
+
+    // 更新视图组件以反映当前选择
+    updateView() {
+        if (!this.view) {
+            outputChannel.appendLine('View not set');
+            outputChannel.show();
+            return;
+        }
+        if (this.data.length === 0) {
+            outputChannel.appendLine('No data to show');
+            outputChannel.show();
+            return;
+        }
+        this.view
+            .reveal(this.data[this.currentIndex], { select: true, focus: true })
+            .then(() => {
+                outputChannel.appendLine(`Setting view '${this.view?.title}' to index: ${this.currentIndex}`);
+                outputChannel.show();
+            });
     }
 }
 
-class LocationProvider implements vscode.TreeDataProvider<LocationItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<LocationItem | undefined> = new vscode.EventEmitter<LocationItem | undefined>();
-    readonly onDidChangeTreeData: vscode.Event<LocationItem | undefined> = this._onDidChangeTreeData.event;
-
-    private locations: LocationItem[] = [];
-
-    refresh(): void {
-        this._onDidChangeTreeData.fire(undefined);
-    }
-
-    loadLocations(locations: LocationItem[]) {
-        this.locations = locations;
+class PathProvider extends HasIndexProvider<PathItem> {
+    loadPaths(paths: PathItem[]) {
+        this.data = paths;
         this.refresh();
     }
+}
 
-    getTreeItem(element: LocationItem): vscode.TreeItem {
-        return element;
-    }
-
-    getChildren(element?: LocationItem): LocationItem[] {
-        if (element) {
-            return [];
-        } else {
-            return this.locations;
-        }
+class LocationProvider extends HasIndexProvider<LocationItem> {
+    loadLocations(locations: LocationItem[]) {
+        this.data = locations;
+        this.refresh();
+        this.resetIndex();
     }
 
     private currentDecorationType?: vscode.TextEditorDecorationType;
@@ -112,13 +145,14 @@ class LocationProvider implements vscode.TreeDataProvider<LocationItem> {
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-    const outputChannel = vscode.window.createOutputChannel('Path Viewer');
-
     const allPathsProvider = new PathProvider();
     const pathDetailsProvider = new LocationProvider();
 
     const allPathsTreeView = vscode.window.createTreeView('all-paths', { treeDataProvider: allPathsProvider });
     const pathDetailsTreeView = vscode.window.createTreeView('path-details', { treeDataProvider: pathDetailsProvider });
+
+    allPathsProvider.setTreeView(allPathsTreeView);
+    pathDetailsProvider.setTreeView(pathDetailsTreeView);
 
     allPathsTreeView.onDidChangeSelection(e => {
         const selectedPath = e.selection[0];
@@ -178,6 +212,7 @@ export function activate(context: vscode.ExtensionContext) {
                     }));
 
                 allPathsProvider.loadPaths(allPaths);
+                allPathsProvider.resetIndex();
 
                 // focus on all-paths view
                 vscode.commands.executeCommand("all-paths.focus");
@@ -191,7 +226,22 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
     context.subscriptions.push(disposable);
+
+    context.subscriptions.push(vscode.commands.registerCommand('thebesttv-path-viewer.allPathsPreviousPath', () => {
+        allPathsProvider.selectPreviousItem();
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('thebesttv-path-viewer.allPathsNextPath', () => {
+        allPathsProvider.selectNextItem();
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('thebesttv-path-viewer.pathDetailsPreviousStmt', () => {
+        pathDetailsProvider.selectPreviousItem();
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('thebesttv-path-viewer.pathDetailsNextStmt', () => {
+        pathDetailsProvider.selectNextItem();
+    }));
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() { }
+export function deactivate() {
+    outputChannel.dispose();
+}
