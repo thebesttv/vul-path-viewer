@@ -138,7 +138,7 @@ class LocationProvider extends HasIndexProvider<LocationItem> {
         document.setDecorations(this.currentDecorationType, [range]);
 
         // 聚焦到高亮的范围
-        document.revealRange(range, vscode.TextEditorRevealType.InCenter);
+        document.revealRange(range, vscode.TextEditorRevealType.Default);
     }
 }
 
