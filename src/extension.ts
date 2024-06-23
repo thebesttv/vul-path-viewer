@@ -10,6 +10,8 @@ interface PathItem extends vscode.TreeItem {
 }
 
 interface LocationItem extends vscode.TreeItem {
+    index: number;
+    type: string;
     file: string;
     beginLine: number;
     beginColumn: number;
@@ -123,7 +125,9 @@ export function activate(context: vscode.ExtensionContext) {
                         collapsibleState: vscode.TreeItemCollapsibleState.None,
 
                         locations: result.locations.map((location: any, index: number) => ({
-                            label: `${index}: ${location.content}`,
+                            label: `${index} ${location.type}: ${location.content}`,
+                            index: index,
+                            type: location.type,
                             file: location.file,
                             beginLine: location.beginLine,
                             beginColumn: location.beginColumn,
