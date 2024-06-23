@@ -25,7 +25,7 @@ class HasIndexProvider<T extends vscode.TreeItem> implements vscode.TreeDataProv
     private _onDidChangeTreeData: vscode.EventEmitter<T | undefined> = new vscode.EventEmitter<T | undefined>();
     readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;
 
-    protected data: T[] = [];
+    data: T[] = [];
 
     refresh(): void {
         this._onDidChangeTreeData.fire(undefined);
@@ -157,6 +157,8 @@ export function activate(context: vscode.ExtensionContext) {
     allPathsTreeView.onDidChangeSelection(e => {
         const selectedPath = e.selection[0];
         if (selectedPath) {
+            // update index to selection
+            allPathsProvider.currentIndex = allPathsProvider.data.indexOf(selectedPath);
             pathDetailsProvider.loadLocations(selectedPath.locations);
         }
     });
@@ -164,6 +166,8 @@ export function activate(context: vscode.ExtensionContext) {
     pathDetailsTreeView.onDidChangeSelection(e => {
         const selectedLocation = e.selection[0];
         if (selectedLocation) {
+            // update index to selection
+            pathDetailsProvider.currentIndex = pathDetailsProvider.data.indexOf(selectedLocation);
             pathDetailsProvider.highlightLocation(selectedLocation);
         }
     });
