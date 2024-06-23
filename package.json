@@ -49,8 +49,8 @@
     ],
     "commands": [
       {
-        "command": "thebesttv-path-viewer.helloWorld",
-        "title": "Hello World"
+        "command": "thebesttv-path-viewer.openOutputJson",
+        "title": "Open as output.json"
       }
     ]
   },

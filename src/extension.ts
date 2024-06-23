@@ -1,25 +1,147 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+
+interface PathItem extends vscode.TreeItem {
+    type: string;
+    locations: LocationItem[];
+}
+
+interface LocationItem extends vscode.TreeItem {
+    file: string;
+    beginLine: number;
+    beginColumn: number;
+    endLine: number;
+    endColumn: number;
+}
+
+class PathProvider implements vscode.TreeDataProvider<PathItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<PathItem | undefined> = new vscode.EventEmitter<PathItem | undefined>();
+    readonly onDidChangeTreeData: vscode.Event<PathItem | undefined> = this._onDidChangeTreeData.event;
+
+    private paths: PathItem[] = [];
+
+    refresh(): void {
+        this._onDidChangeTreeData.fire(undefined);
+    }
+
+    loadPaths(paths: PathItem[]) {
+        this.paths = paths;
+        this.refresh();
+    }
+
+    getTreeItem(element: PathItem): vscode.TreeItem {
+        return element;
+    }
+
+    getChildren(element?: PathItem): PathItem[] {
+        if (element) {
+            return [];
+        } else {
+            return this.paths;
+        }
+    }
+}
+
+class LocationProvider implements vscode.TreeDataProvider<LocationItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<LocationItem | undefined> = new vscode.EventEmitter<LocationItem | undefined>();
+    readonly onDidChangeTreeData: vscode.Event<LocationItem | undefined> = this._onDidChangeTreeData.event;
+
+    private locations: LocationItem[] = [];
+
+    refresh(): void {
+        this._onDidChangeTreeData.fire(undefined);
+    }
+
+    loadLocations(locations: LocationItem[]) {
+        this.locations = locations;
+        this.refresh();
+    }
+
+    getTreeItem(element: LocationItem): vscode.TreeItem {
+        return element;
+    }
+
+    getChildren(element?: LocationItem): LocationItem[] {
+        if (element) {
+            return [];
+        } else {
+            return this.locations;
+        }
+    }
+}
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+    console.log('Congratulations, your extension "thebesttv-path-viewer" is now active!');
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "thebesttv-path-viewer" is now active!');
+    const outputChannel = vscode.window.createOutputChannel('Path Viewer');
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('thebesttv-path-viewer.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Path Viewer!');
-	});
+    const allPathsProvider = new PathProvider();
+    const pathDetailsProvider = new LocationProvider();
 
-	context.subscriptions.push(disposable);
+    const allPathsTreeView = vscode.window.createTreeView('all-paths', {treeDataProvider: allPathsProvider});
+    const pathDetailsTreeView = vscode.window.createTreeView('path-details', {treeDataProvider: pathDetailsProvider});
+
+    allPathsTreeView.onDidChangeSelection( e => {
+        const selectedPath = e.selection[0];
+        if (selectedPath) {
+            pathDetailsProvider.loadLocations(selectedPath.locations);
+        }
+    });
+
+    let disposable = vscode.commands.registerCommand('thebesttv-path-viewer.openOutputJson', async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+            const document = editor.document;
+            const filePath = document.fileName;
+
+            if (path.basename(filePath) === 'output.json') {
+                const fileContent = document.getText();
+                outputChannel.appendLine(`Loading path from: ${filePath}`);
+                outputChannel.show();
+                try {
+                    const jsonContent = JSON.parse(fileContent);
+
+                    if (jsonContent && jsonContent.results && Array.isArray(jsonContent.results)) {
+                        const allPaths: PathItem[] = jsonContent.results
+                            // skip npe-good-source
+                            .filter((result: any) => result.type !== 'npe-good-source')
+                            .map((result: any) => ({
+                                label: result.sourceIndex !== undefined
+                                    ? `${result.type} (${result.sourceIndex})` : result.type,
+                                type: result.type,
+                                collapsibleState: vscode.TreeItemCollapsibleState.None,
+
+                                locations: result.locations.map((location: any, index: number) => ({
+                                    label: `${index}: ${location.content}`,
+                                    file: location.file,
+                                    beginLine: location.beginLine,
+                                    beginColumn: location.beginColumn,
+                                    endLine: location.endLine,
+                                    endColumn: location.endColumn,
+                                    collapsibleState: vscode.TreeItemCollapsibleState.None
+                                }))
+                            }));
+
+                        allPathsProvider.loadPaths(allPaths);
+
+                        vscode.window.showInformationMessage('Paths loaded successfully');
+                    } else {
+                        vscode.window.showErrorMessage('Invalid JSON format: Expected results array');
+                    }
+                } catch (error) {
+                    vscode.window.showErrorMessage('Invalid JSON file');
+                }
+            } else {
+                vscode.window.showErrorMessage('Please open a file named output.json');
+            }
+        }
+    });
+    context.subscriptions.push(disposable);
 }
 
 // This method is called when your extension is deactivated
