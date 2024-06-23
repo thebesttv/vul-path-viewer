@@ -76,17 +76,15 @@ class LocationProvider implements vscode.TreeDataProvider<LocationItem> {
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-    console.log('Congratulations, your extension "thebesttv-path-viewer" is now active!');
-
     const outputChannel = vscode.window.createOutputChannel('Path Viewer');
 
     const allPathsProvider = new PathProvider();
     const pathDetailsProvider = new LocationProvider();
 
-    const allPathsTreeView = vscode.window.createTreeView('all-paths', {treeDataProvider: allPathsProvider});
-    const pathDetailsTreeView = vscode.window.createTreeView('path-details', {treeDataProvider: pathDetailsProvider});
+    const allPathsTreeView = vscode.window.createTreeView('all-paths', { treeDataProvider: allPathsProvider });
+    const pathDetailsTreeView = vscode.window.createTreeView('path-details', { treeDataProvider: pathDetailsProvider });
 
-    allPathsTreeView.onDidChangeSelection( e => {
+    allPathsTreeView.onDidChangeSelection(e => {
         const selectedPath = e.selection[0];
         if (selectedPath) {
             pathDetailsProvider.loadLocations(selectedPath.locations);
@@ -95,54 +93,58 @@ export function activate(context: vscode.ExtensionContext) {
 
     let disposable = vscode.commands.registerCommand('thebesttv-path-viewer.openOutputJson', async () => {
         const editor = vscode.window.activeTextEditor;
-        if (editor) {
-            const document = editor.document;
-            const filePath = document.fileName;
+        if (!editor) {
+            vscode.window.showErrorMessage('Please open a file named output.json');
+            return;
+        }
 
-            if (path.basename(filePath) === 'output.json') {
-                const fileContent = document.getText();
-                outputChannel.appendLine(`Loading path from: ${filePath}`);
-                outputChannel.show();
-                try {
-                    const jsonContent = JSON.parse(fileContent);
+        const document = editor.document;
+        const filePath = document.fileName;
 
-                    if (jsonContent && jsonContent.results && Array.isArray(jsonContent.results)) {
-                        const allPaths: PathItem[] = jsonContent.results
-                            // skip npe-good-source
-                            .filter((result: any) => result.type !== 'npe-good-source')
-                            .map((result: any) => ({
-                                label: result.sourceIndex !== undefined
-                                    ? `${result.type} (${result.sourceIndex})` : result.type,
-                                type: result.type,
-                                collapsibleState: vscode.TreeItemCollapsibleState.None,
+        if (path.basename(filePath) !== 'output.json') {
+            vscode.window.showErrorMessage('Please open a file named output.json');
+            return;
+        }
 
-                                locations: result.locations.map((location: any, index: number) => ({
-                                    label: `${index}: ${location.content}`,
-                                    file: location.file,
-                                    beginLine: location.beginLine,
-                                    beginColumn: location.beginColumn,
-                                    endLine: location.endLine,
-                                    endColumn: location.endColumn,
-                                    collapsibleState: vscode.TreeItemCollapsibleState.None
-                                }))
-                            }));
+        const fileContent = document.getText();
+        try {
+            outputChannel.appendLine(`Loading path from: ${filePath}`);
+            outputChannel.show();
+            const jsonContent = JSON.parse(fileContent);
 
-                        allPathsProvider.loadPaths(allPaths);
+            if (jsonContent && jsonContent.results && Array.isArray(jsonContent.results)) {
+                const allPaths: PathItem[] = jsonContent.results
+                    // skip npe-good-source
+                    .filter((result: any) => result.type !== 'npe-good-source')
+                    .map((result: any) => ({
+                        label: result.sourceIndex !== undefined
+                            ? `${result.type} (${result.sourceIndex})` : result.type,
+                        type: result.type,
+                        collapsibleState: vscode.TreeItemCollapsibleState.None,
 
-                        vscode.window.showInformationMessage('Paths loaded successfully');
-                    } else {
-                        vscode.window.showErrorMessage('Invalid JSON format: Expected results array');
-                    }
-                } catch (error) {
-                    vscode.window.showErrorMessage('Invalid JSON file');
-                }
+                        locations: result.locations.map((location: any, index: number) => ({
+                            label: `${index}: ${location.content}`,
+                            file: location.file,
+                            beginLine: location.beginLine,
+                            beginColumn: location.beginColumn,
+                            endLine: location.endLine,
+                            endColumn: location.endColumn,
+                            collapsibleState: vscode.TreeItemCollapsibleState.None
+                        }))
+                    }));
+
+                allPathsProvider.loadPaths(allPaths);
+
+                vscode.window.showInformationMessage('Paths loaded successfully');
             } else {
-                vscode.window.showErrorMessage('Please open a file named output.json');
+                vscode.window.showErrorMessage('Invalid JSON format: Expected results array');
             }
+        } catch (error) {
+            vscode.window.showErrorMessage('Invalid JSON file');
         }
     });
     context.subscriptions.push(disposable);
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }
