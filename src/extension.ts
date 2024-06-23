@@ -194,7 +194,7 @@ export function activate(context: vscode.ExtensionContext) {
                     // skip npe-good-source
                     .filter((result: any) => result.type !== 'npe-good-source')
                     .map((result: any) => ({
-                        label: `${result.type}: ${result.locations.length} stmts ${result.sourceIndex !== undefined ? result.sourceIndex : ''}`,
+                        label: `${result.type}: ${result.locations.length} stmts ${result.sourceIndex !== undefined ? '(' + result.sourceIndex + ')' : ''}`,
                         type: result.type,
                         collapsibleState: vscode.TreeItemCollapsibleState.None,
 
