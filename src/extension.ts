@@ -135,6 +135,9 @@ export function activate(context: vscode.ExtensionContext) {
 
                 allPathsProvider.loadPaths(allPaths);
 
+                // focus on all-paths view
+                vscode.commands.executeCommand("all-paths.focus");
+
                 vscode.window.showInformationMessage('Paths loaded successfully');
             } else {
                 vscode.window.showErrorMessage('Invalid JSON format: Expected results array');
