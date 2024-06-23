@@ -73,6 +73,40 @@ class LocationProvider implements vscode.TreeDataProvider<LocationItem> {
             return this.locations;
         }
     }
+
+    private currentDecorationType?: vscode.TextEditorDecorationType;
+
+    async highlightLocation(location: LocationItem) {
+        const uri = vscode.Uri.file(location.file);
+        const document = await vscode.window.showTextDocument(uri);
+
+        // 清除之前的高亮
+        if (this.currentDecorationType) {
+            document.setDecorations(this.currentDecorationType, []);
+            this.currentDecorationType.dispose(); // 释放之前装饰类型的资源
+        }
+
+        // 创建一个范围，覆盖从开始行列到结束行列的代码
+        const range = new vscode.Range(
+            new vscode.Position(location.beginLine - 1, location.beginColumn - 1),
+            new vscode.Position(location.endLine - 1, location.endColumn - 1)
+        );
+
+        // 创建一个装饰类型，用边框框出代码，并在行尾展示文字
+        this.currentDecorationType = vscode.window.createTextEditorDecorationType({
+            border: '1px solid rgba(255,0,0,0.5)', // 红色边框，半透明
+            after: {
+                contentText: `${location.index} ${location.type}`, // 行尾展示的文字
+                color: 'rgba(255,0,0,0.5)', // 文字颜色
+                margin: '0 0 0 3em' // 文字与代码的间距
+            }
+        });
+
+        document.setDecorations(this.currentDecorationType, [range]);
+
+        // 聚焦到高亮的范围
+        document.revealRange(range, vscode.TextEditorRevealType.InCenter);
+    }
 }
 
 // This method is called when your extension is activated
@@ -90,6 +124,13 @@ export function activate(context: vscode.ExtensionContext) {
         const selectedPath = e.selection[0];
         if (selectedPath) {
             pathDetailsProvider.loadLocations(selectedPath.locations);
+        }
+    });
+
+    pathDetailsTreeView.onDidChangeSelection(e => {
+        const selectedLocation = e.selection[0];
+        if (selectedLocation) {
+            pathDetailsProvider.highlightLocation(selectedLocation);
         }
     });
 
