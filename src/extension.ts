@@ -85,11 +85,11 @@ class HasIndexProvider<T extends vscode.TreeItem> implements vscode.TreeDataProv
             return;
         }
         this.view
-            .reveal(this.data[this.currentIndex], { select: true, focus: true })
-            .then(() => {
-                outputChannel.appendLine(`Setting view '${this.view?.title}' to index: ${this.currentIndex}`);
-                outputChannel.show();
-            });
+            .reveal(this.data[this.currentIndex], { select: true, focus: true });
+        // .then(() => {
+        //     outputChannel.appendLine(`Setting view '${this.view?.title}' to index: ${this.currentIndex}`);
+        //     outputChannel.show();
+        // });
     }
 }
 
