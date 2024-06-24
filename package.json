@@ -78,22 +78,22 @@
       {
         "command": "thebesttv-path-viewer.allPathsPreviousPath",
         "key": "left",
-        "when": "true"
+        "when": "view.all-paths.visible || view.paths-details.visible"
       },
       {
         "command": "thebesttv-path-viewer.allPathsNextPath",
         "key": "right",
-        "when": "true"
+        "when": "view.all-paths.visible || view.paths-details.visible"
       },
       {
         "command": "thebesttv-path-viewer.pathDetailsPreviousStmt",
         "key": "up",
-        "when": "true"
+        "when": "view.all-paths.visible || view.paths-details.visible"
       },
       {
         "command": "thebesttv-path-viewer.pathDetailsNextStmt",
         "key": "down",
-        "when": "true"
+        "when": "view.all-paths.visible || view.paths-details.visible"
       }
     ]
   },
