@@ -195,8 +195,8 @@ export function activate(context: vscode.ExtensionContext) {
 
             if (jsonContent && jsonContent.results && Array.isArray(jsonContent.results)) {
                 const allPaths: PathItem[] = jsonContent.results
-                    // skip npe-good-source
-                    .filter((result: any) => result.type !== 'npe-good-source')
+                    // skip good sources
+                    .filter((result: any) => !result.type.endsWith('-good-source'))
                     .map((result: any) => ({
                         label: `${result.type}: ${result.locations.length} stmts ${result.sourceIndex !== undefined ? '(' + result.sourceIndex + ')' : ''}`,
                         type: result.type,
